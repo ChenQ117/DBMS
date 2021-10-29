@@ -1,0 +1,3 @@
+0 essn string not null
+1 dependent_name string not null
+2 relationship string not null

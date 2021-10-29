@@ -1,0 +1,8 @@
+0 ssn string primary key
+1 name string not null
+2 bdate string not null
+3 address string not null
+4 sex string not null
+5 salary float not null
+6 superssn string not null
+7 dno string not null
