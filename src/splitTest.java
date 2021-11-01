@@ -13,36 +13,41 @@ import java.util.regex.Pattern;
  * @Date: 2021/10/24 on 14:13
  */
 public class splitTest {
-    private final String tableNamePath = "DATA/tableInfo.txt";
     private final String keyWord = "[a-zA-Z]+(\\w)*";//关键字
     private final String space_1 = "\\s+";//一个或多个空格
     private final String space_0 = "\\s*";//零个或多个空格
     private final String type = "(string|int|float)";//属性
+    private final String type1 = "((string"+space_0+"\\("+space_0+"\\d+"+space_0+"\\))|int|float)";//属性
     private final String bind = "\\s+(primary key|not null)?";//约束条件
+    private final String bind_1 = "(primary key|not null)";
     private final String keyValue = "(\"\\s*\\S+\\s*\"|\\d+(\\.\\d+)*)";//属性值为字符串或者整数
+    private final String whereOp = "(>=|<=|!=|=|>|<)";//where查询条件
     private final Pattern create_table = Pattern.compile("create"+space_1+"table"+space_1+keyWord+space_0
-            + "\\(("+space_0+keyWord+space_1+type+bind+space_0+",)*"
-            +space_0+keyWord+space_1+type+bind+space_0+"\\)"+space_0);
+            + "\\(("+space_0+keyWord+space_1+type+"("+bind+")*"+space_0+",)*"
+            +space_0+keyWord+space_1+type+"("+bind+")*"+space_0+"\\)"+space_0);
     private final Pattern drop_table = Pattern.compile("drop"+space_1+"table"+space_1+keyWord+space_0);
+
     private final Pattern insert_line = Pattern.compile("insert"+space_1+"into"+space_1+keyWord+space_1
             +"values"+space_0+"\\("+"("+space_0+keyValue+space_0+","+")*"+space_0+keyValue+"\\)");
     private final Pattern selectAll = Pattern.compile("select"+space_1+"\\*"+space_1+"from"+space_1+keyWord);
-    private final Pattern alter_table = Pattern.compile("alter"+space_1+"table"+space_1+keyWord
-            +space_1+"(add"+space_1+keyWord+space_1+type+bind+space_0+",)*"+space_0
-            +"(add"+space_1+keyWord+space_1+type+bind+space_0+")");
+    private final Pattern alter_table_add = Pattern.compile("alter"+space_1+"table"+space_1+keyWord
+            +space_1+"(add"+space_1+keyWord+space_1+type+"("+bind+")*"+space_0+",)*"+space_0
+            +"(add"+space_1+keyWord+space_1+type+"("+bind+")*"+space_0+")");
     private final Pattern alter_table_drop = Pattern.compile("alter"+space_1+"table"+space_1+keyWord
             +space_1+"(drop"+space_1+keyWord+space_0+",)*"+space_0
             +"(drop"+space_1+keyWord+space_0+")");
+    private final Pattern delete_all = Pattern.compile("delete"+space_1+"from"+space_1+keyWord);
     private final Pattern delete_where = Pattern.compile("delete"+space_1+"from"+space_1+keyWord+space_1+"where"+space_1+keyWord+space_0
             +"="+space_0+keyValue+"("+space_1+"and"+space_1+keyWord+space_0
             +"="+space_0+keyValue+")*");
-    private final Pattern updata_all = Pattern.compile("update"+space_1+keyWord+space_1+"set"+space_1+keyWord
+    private final Pattern update_all = Pattern.compile("update"+space_1+keyWord+space_1+"set"+space_1+keyWord
             +space_0+"="+space_0+keyValue+space_0+"(,"+space_0+keyWord+space_0+"="+space_0+keyValue+space_0+")*");
     private final Pattern update_where = Pattern.compile("update"+space_1+keyWord+space_1+"set"+space_1+keyWord
             +space_0+"="+space_0+keyValue+space_0+"(,"+space_0+keyWord+space_0+"="+space_0+keyValue+space_0+")*"
             +space_1+"where"+space_1+keyWord+space_0
             +"="+space_0+keyValue+"("+space_1+"and"+space_1+keyWord+space_0
             +"="+space_0+keyValue+")*");
+
     @Test
     public void test(){
         String s = "CREATE TABLE employee(\n" +
@@ -56,10 +61,15 @@ public class splitTest {
     }
     @Test
     public void test_2(){
-        String s1 = "(m int)";
+        String s1 = "m >= 10";
         s1 =s1.toLowerCase();
-        Pattern s2 =  Pattern.compile(keyWord+space_1+type+bind);
+        Pattern s2 =  Pattern.compile(keyWord+space_0
+                +whereOp+space_0+keyValue);
         System.out.println(s1+" "+s2.matcher(s1).matches());
+        String[] split = s1.split(whereOp);
+        for (int i=0;i<split.length;i++){
+            System.out.println(i+": "+split[i]);
+        }
     }
     @Test
     public void test3(){
@@ -104,5 +114,37 @@ public class splitTest {
         /*for (Object o1:colValue){
             System.out.println(o1);
         }*/
+    }
+
+    @Test
+    public void test_group(){
+        String s = "CREATE TABLE department(\n" +
+                "dNAME string NOT NULL,\n" +
+                "dnumber string PRIMARY KEY,\n" +
+                "mgrssn string NOT NULL,\n" +
+                "mgrstartdate string NOT NULL\n" +
+                ")";
+        s = s.toLowerCase();
+        String s1 = "CREATE TABLE department(\n" +
+                "dNAME string(11) NOT NULL,\n" +
+                "dnumber string(12) PRIMARY KEY,\n" +
+                "mgrssn string(13) NOT NULL,\n" +
+                "mgrstartdate string(14) NOT NULL\n" +
+                ")";
+        s1 = s1.toLowerCase();
+        Pattern p = Pattern.compile("create"+space_1+"table"+space_1+keyWord+space_0
+                + "\\((?<g1>("+space_0+keyWord+space_1+type1+"("+bind+")*"+space_0+",)*"
+                +space_0+keyWord+space_1+type1+"("+bind+")*"+space_0+"\\))"+space_0);
+        Matcher matcher = create_table.matcher(s1);
+        System.out.println(s1+p.matcher(s1).matches());
+        String s2 = s1.substring(s1.indexOf("(")+1,s1.lastIndexOf(")"));
+        System.out.println(s2);
+        String g1 = matcher.group("g1");
+        System.out.println(g1);
+        /*for (int i=0;i<matcher.groupCount();i++){
+            System.out.println(i+": "+matcher.group(i));
+        }*/
+
+//        System.out.println(matcher.groupCount());
     }
 }

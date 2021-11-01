@@ -20,7 +20,6 @@ public class CommandUtils {
     private static CommandUtils instance;
     private final String ROOT = "DATA/";
     public static final String suffix = ".txt";
-    private final String tableNamePath = "DATA/tableInfo.txt";
     private final String keyWord = "[a-zA-Z]+(\\w)*";//关键字
     private final String space_1 = "\\s+";//一个或多个空格
     private final String space_0 = "\\s*";//零个或多个空格
@@ -28,6 +27,7 @@ public class CommandUtils {
     private final String bind = "\\s+(primary key|not null)?";//约束条件
     private final String bind_1 = "(primary key|not null)";
     private final String keyValue = "(\"\\s*\\S+\\s*\"|\\d+(\\.\\d+)*)";//属性值为字符串或者整数
+    private final String whereOp = "(>=|<=|!=|=|>|<)";//where查询条件
     private final Pattern create_table = Pattern.compile("create"+space_1+"table"+space_1+keyWord+space_0
             + "\\(("+space_0+keyWord+space_1+type+"("+bind+")*"+space_0+",)*"
             +space_0+keyWord+space_1+type+"("+bind+")*"+space_0+"\\)"+space_0);
@@ -43,15 +43,15 @@ public class CommandUtils {
             +"(drop"+space_1+keyWord+space_0+")");
     private final Pattern delete_all = Pattern.compile("delete"+space_1+"from"+space_1+keyWord);
     private final Pattern delete_where = Pattern.compile("delete"+space_1+"from"+space_1+keyWord+space_1+"where"+space_1+keyWord+space_0
-            +"="+space_0+keyValue+"("+space_1+"and"+space_1+keyWord+space_0
-            +"="+space_0+keyValue+")*");
+            +whereOp+space_0+keyValue+"("+space_1+"and"+space_1+keyWord+space_0
+            +whereOp+space_0+keyValue+")*");
     private final Pattern update_all = Pattern.compile("update"+space_1+keyWord+space_1+"set"+space_1+keyWord
             +space_0+"="+space_0+keyValue+space_0+"(,"+space_0+keyWord+space_0+"="+space_0+keyValue+space_0+")*");
     private final Pattern update_where = Pattern.compile("update"+space_1+keyWord+space_1+"set"+space_1+keyWord
             +space_0+"="+space_0+keyValue+space_0+"(,"+space_0+keyWord+space_0+"="+space_0+keyValue+space_0+")*"
             +space_1+"where"+space_1+keyWord+space_0
-            +"="+space_0+keyValue+"("+space_1+"and"+space_1+keyWord+space_0
-            +"="+space_0+keyValue+")*");
+            +whereOp+space_0+keyValue+"("+space_1+"and"+space_1+keyWord+space_0
+            +whereOp+space_0+keyValue+")*");
     public void execute(String command){
         command = command.toLowerCase();
         if (create_table.matcher(command).matches()){
@@ -438,13 +438,25 @@ public class CommandUtils {
         String[] split2 = split.split("and");//[NAME = "王二"][ssn = "230101198204078121"]
         List<String> key = new ArrayList<>();
         List value = new ArrayList();
+        List<String> op = new ArrayList<>();//操作运算符
         for (int i=0;i<split2.length;i++){
             split2[i] = split2[i].trim();
-            String[] split3 = split2[i].split("=");//[NAME] ["王二"]
+            String[] split3;
+            if (split2[i].indexOf(">=")!=-1){
+                split3 = split2[i].split("(?=>=)|(?<=>=)");
+            }else if (split2[i].indexOf("<=")!=-1){
+                split3 = split2[i].split("(?=<=)|(?<=<=)");
+            }else if (split2[i].indexOf("!=")!=-1){
+                split3 = split2[i].split("(?=!=)|(?<=!=)");
+            }else {
+                split3 = split2[i].split("(?="+whereOp+")|(?<="+whereOp+")");//[NAME][=] ["王二"]
+            }
+
             key.add(split3[0].trim());
             split3[1] = split3[1].trim();
-            split3[1] = split3[1].replace("\"","");
-            value.add(split3[1].trim());
+            op.add(split3[1]);
+            split3[2] = split3[2].replace("\"","");
+            value.add(split3[2].trim());
         }
         if (!attribute.containsAll(key)){
             System.out.println(log+"查询属性不存在");
@@ -457,13 +469,17 @@ public class CommandUtils {
                 for (int j=0;j<key.size();j++){
                     Column column = columns.get(attribute.indexOf(key.get(j)));
                     if (column.getType().equals("string")){
-                        if (column.getColValue().get(i).equals(value.get(j))){
+                        if (!op.get(j).equals("=")&&!op.get(j).equals("!=")){
+                            System.out.println(log+"字符串不支持大小比较");
+                            return index;
+                        }
+                        if (whereOperate(op.get(j),column.getColValue().get(i),value.get(j),"string")){
                             k++;
                         }
                     }else if (column.getType().equals("int")){
                         try {
                             int value1 = Integer.valueOf((String) value.get(j));
-                            if (Integer.valueOf((String)column.getColValue().get(i)) == value1){
+                            if (whereOperate(op.get(j),Integer.parseInt((String) column.getColValue().get(i)),value1,"int")){
                                 k++;
                             }
                         }catch (NumberFormatException e){
@@ -474,7 +490,7 @@ public class CommandUtils {
                     }else if (column.getType().equals("float")){
                         try {
                             float value1 = Float.valueOf((String) value.get(j));
-                            if (Float.valueOf((String) column.getColValue().get(i)) == value1){
+                            if (whereOperate(op.get(j),Float.valueOf((String)column.getColValue().get(i)),value1,"float")){
                                 k++;
                             }
                         }catch (NumberFormatException e){
@@ -491,6 +507,131 @@ public class CommandUtils {
             }
         }
         return index;
+    }
+    //where操作运算符判定
+    public boolean whereOperate(String op,Object o2,Object v,String type){
+        boolean flag = false;//条件是否符合
+        switch (op){
+            case ">=":{
+                if ("int".equals(type)){
+                    int value = (int) v;
+                    int o = (int) o2;//属性值
+                    if (o>=value){
+                        flag = true;
+                    }else flag = false;
+                }else if ("float".equals(type)){
+                    float value = (float) v;
+                    float o = (float) o2;
+                    if (o>=value)
+                        flag = true;
+                    else
+                        flag = false;
+                }
+            }
+            break;
+            case "<=":{
+                if ("int".equals(type)){
+                    int value = (int) v;
+                    int o = (int) o2;//属性值
+                    if (o<=value){
+                        flag = true;
+                    }else flag = false;
+                }else if ("float".equals(type)){
+                    float value = (float) v;
+                    float o = (float) o2;
+                    if (o<=value)
+                        flag = true;
+                    else
+                        flag = false;
+                }
+            }
+            break;
+            case ">":{
+                if ("int".equals(type)){
+                    int value = (int) v;
+                    int o = (int) o2;//属性值
+                    if (o>value){
+                        flag = true;
+                    }else flag = false;
+                }else if ("float".equals(type)){
+                    float value = (float) v;
+                    float o = (float) o2;
+                    if (o>value)
+                        flag = true;
+                    else
+                        flag = false;
+                }
+            }
+            break;
+            case "<":{
+                if ("int".equals(type)){
+                    int value = (int) v;
+                    int o = (int) o2;//属性值
+                    if (o<value){
+                        flag = true;
+                    }else flag = false;
+                }else if ("float".equals(type)){
+                    float value = (float) v;
+                    float o = (float) o2;
+                    if (o<value)
+                        flag = true;
+                    else
+                        flag = false;
+                }
+            }
+            break;
+            case "=":{
+                if ("string".equals(type)){
+                    String value = (String) v;
+                    String o = (String) o2;
+                    if (o.equals(value))
+                        flag = true;
+                    else
+                        flag = false;
+                }
+                else if ("int".equals(type)){
+                    int value = (int) v;
+                    int o = (int) o2;//属性值
+                    if (o>=value){
+                        flag = true;
+                    }else flag = false;
+                }else if ("float".equals(type)){
+                    float value = (float) v;
+                    float o = (float) o2;
+                    if (o>=value)
+                        flag = true;
+                    else
+                        flag = false;
+                }
+            }
+            break;
+            case "!=":{
+                if ("string".equals(type)){
+                    String value = (String) v;
+                    String o = (String) o2;
+                    if (!o.equals(value))
+                        flag = true;
+                    else
+                        flag = false;
+                }
+                else if ("int".equals(type)){
+                    int value = (int) v;
+                    int o = (int) o2;//属性值
+                    if (o!=value){
+                        flag = true;
+                    }else flag = false;
+                }else if ("float".equals(type)){
+                    float value = (float) v;
+                    float o = (float) o2;
+                    if (o!=value)
+                        flag = true;
+                    else
+                        flag = false;
+                }
+            }
+            break;
+        }
+        return flag;
     }
     //修改所有元组指定属性的值
     public void updateAll(String command){

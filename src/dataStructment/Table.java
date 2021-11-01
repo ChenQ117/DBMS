@@ -74,12 +74,15 @@ public class Table {
     public void showTable(){
         for (String attr:attribute){
             System.out.print(attr+"\t\t");
+//            System.out.print(String.format("%-20s",attr));
         }
         System.out.println();
         if (!columns.isEmpty()){
             for (int i=0;i<columns.get(0).getColValue().size();i++){
                 for (int j=0;j<attribute_count;j++){
                     System.out.print(columns.get(j).getColValue().get(i)+"\t\t");
+//                    int length = 21-((String)columns.get(j).getColValue().get(i)).length()+1;
+//                    System.out.print(String.format("%-"+length+"s",columns.get(j).getColValue().get(i)));
                 }
                 System.out.println();
             }
