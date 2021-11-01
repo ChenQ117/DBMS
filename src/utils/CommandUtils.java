@@ -31,6 +31,7 @@ public class CommandUtils {
     private final Pattern create_table = Pattern.compile("create"+space_1+"table"+space_1+keyWord+space_0
             + "\\(("+space_0+keyWord+space_1+type+"("+bind+")*"+space_0+",)*"
             +space_0+keyWord+space_1+type+"("+bind+")*"+space_0+"\\)"+space_0);
+    private final Pattern desc_table = Pattern.compile("desc"+space_1+keyWord+space_0);
     private final Pattern drop_table = Pattern.compile("drop"+space_1+"table"+space_1+keyWord+space_0);
     private final Pattern insert_line = Pattern.compile("insert"+space_1+"into"+space_1+keyWord+space_1
             +"values"+space_0+"\\("+"("+space_0+keyValue+space_0+","+")*"+space_0+keyValue+"\\)");
@@ -56,7 +57,9 @@ public class CommandUtils {
         command = command.toLowerCase();
         if (create_table.matcher(command).matches()){
             create(command);
-        }else if (drop_table.matcher(command).matches()){
+        }else if (desc_table.matcher(command).matches()){
+            desc(command);
+        } else if (drop_table.matcher(command).matches()){
             dropTable(command);
         }else if (insert_line.matcher(command).matches()){
             insert(command);
@@ -256,6 +259,16 @@ public class CommandUtils {
         }
         ReadAndWrite.insertValue(table);
         System.out.println("插入成功");
+    }
+    //显示表结构
+    public void desc(String command){
+        String[] split = command.split("\\s+");
+        String name = split[1];
+        if (!isExitsTable(name)){
+            System.out.println(name+"表不存在");
+            return;
+        }
+        ReadAndWrite.readDictionary(name);
     }
     //查询表的所有数据
     public void selectAll(String command){

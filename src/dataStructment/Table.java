@@ -82,7 +82,9 @@ public class Table {
                 for (int j=0;j<attribute_count;j++){
                     System.out.print(columns.get(j).getColValue().get(i)+"\t\t");
 //                    int length = 21-((String)columns.get(j).getColValue().get(i)).length()+1;
-//                    System.out.print(String.format("%-"+length+"s",columns.get(j).getColValue().get(i)));
+//                    System.out.print(String.format("%-25s",columns.get(j).getColValue().get(i)));
+//                    System.out.printf("\t%20s\t",columns.get(j).getColValue().get(i));
+
                 }
                 System.out.println();
             }

@@ -60,6 +60,21 @@ public class ReadAndWrite {
             e.printStackTrace();
         }
     }
+    //读取数据字典文件
+    public static void readDictionary(String tableName){
+        String path = ROOT+tableName+dictionary+suffix;
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(path));
+            String str = "";
+            while ((str = reader.readLine())!=null){
+                System.out.println(str);
+            }
+            reader.close();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
     public static void insertValue(Table table){
         try{
             String path = ROOT+table.getTable_name()+suffix;
