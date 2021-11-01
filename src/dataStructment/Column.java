@@ -16,14 +16,31 @@ public class Column {
     private List colValue;//属性值
     private int index;//属性在字典中的位置
     private String bind;//约束
+    private int length;//属性长度 默认大小为10
 
-    public Column(String name, String type, int index) {
+    /*public Column(String name, String type, int index) {
         this.name = name;
         this.type = type;
         this.colValue = new ArrayList();
         this.index = index;
         bind="null";
+    }*/
+    public Column(String name, String type, int index,int length) {
+        this.name = name;
+        this.type = type;
+        this.colValue = new ArrayList();
+        this.index = index;
+        this.length = length>0?length:10;//默认大小为10
+        bind = null;
     }
+    public int getLength() {
+        return length;
+    }
+
+    public void setLength(int length) {
+        this.length = length;
+    }
+
     public String getValue(int index){
         return colValue.get(index).toString();
     }
@@ -96,7 +113,7 @@ public class Column {
 
     @Override
     public String toString() {
-        return index + " " + name + " " + type + " " + bind;
+        return index + " " + name + " " + type +" "+ length + " " + bind;
     }
     public void showValues(String line){
         System.out.println("showValues:"+line+name);

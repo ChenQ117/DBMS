@@ -1,5 +1,3 @@
-0 essn string not null
-1 dependent_name string not null
-2 sex string not null
-3 bdate string not null
-4 relationship string not null
+0 essn string 18 not null
+1 dependent_name string 10 not null
+2 relationship string 10 not null

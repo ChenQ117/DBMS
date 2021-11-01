@@ -18,6 +18,7 @@ public class splitTest {
     private final String space_0 = "\\s*";//零个或多个空格
     private final String type = "(string|int|float)";//属性
     private final String type1 = "((string"+space_0+"\\("+space_0+"\\d+"+space_0+"\\))|int|float)";//属性
+    private final String typeSize = "("+space_0+"\\("+space_0+"\\d+"+space_0+"\\))*";//属性大小
     private final String bind = "\\s+(primary key|not null)?";//约束条件
     private final String bind_1 = "(primary key|not null)";
     private final String keyValue = "(\"\\s*\\S+\\s*\"|\\d+(\\.\\d+)*)";//属性值为字符串或者整数
@@ -61,15 +62,14 @@ public class splitTest {
     }
     @Test
     public void test_2(){
-        String s1 = "m >= 10";
+        String s1 = "string(10)";
         s1 =s1.toLowerCase();
-        Pattern s2 =  Pattern.compile(keyWord+space_0
-                +whereOp+space_0+keyValue);
+        Pattern s2 =  Pattern.compile(type+typeSize);
         System.out.println(s1+" "+s2.matcher(s1).matches());
-        String[] split = s1.split(whereOp);
+        /*String[] split = s1.split(whereOp);
         for (int i=0;i<split.length;i++){
             System.out.println(i+": "+split[i]);
-        }
+        }*/
     }
     @Test
     public void test3(){
@@ -138,7 +138,7 @@ public class splitTest {
         Matcher matcher = create_table.matcher(s1);
         System.out.println(s1+p.matcher(s1).matches());
         String s2 = s1.substring(s1.indexOf("(")+1,s1.lastIndexOf(")"));
-        System.out.println(s2);
+        System.out.println("s2:"+s2);
         String g1 = matcher.group("g1");
         System.out.println(g1);
         /*for (int i=0;i<matcher.groupCount();i++){
@@ -146,5 +146,13 @@ public class splitTest {
         }*/
 
 //        System.out.println(matcher.groupCount());
+    }
+    @Test
+    public void test_7(){
+        String a= "abc";
+        String[] split = a.split("\\(|\\)");
+        for (int i=0;i<split.length;i++){
+            System.out.println(i+split[i]);
+        }
     }
 }

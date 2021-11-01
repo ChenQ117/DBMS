@@ -133,6 +133,8 @@ public class ReadAndWrite {
                 column.setIndex(Integer.valueOf(split_basic[0]));
                 column.setName(split_basic[1]);
                 column.setType(split_basic[2]);
+                column.setLength(Integer.valueOf(split_basic[3]));
+//                System.out.println("140:"+column.getName()+" 长度："+column.getLength());
                 columns.add(column);
                 table.getAttribute().add(split_basic[1]);
                 if (isPrimary){

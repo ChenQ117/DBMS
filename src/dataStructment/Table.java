@@ -80,10 +80,12 @@ public class Table {
         if (!columns.isEmpty()){
             for (int i=0;i<columns.get(0).getColValue().size();i++){
                 for (int j=0;j<attribute_count;j++){
-                    System.out.print(columns.get(j).getColValue().get(i)+"\t\t");
+//                    System.out.print(columns.get(j).getColValue().get(i)+"\t\t");
 //                    int length = 21-((String)columns.get(j).getColValue().get(i)).length()+1;
-//                    System.out.print(String.format("%-25s",columns.get(j).getColValue().get(i)));
-//                    System.out.printf("\t%20s\t",columns.get(j).getColValue().get(i));
+                    System.out.print(String.format("%-"+columns.get(j).getLength()+"s ",columns.get(j).getColValue().get(i)));
+//                    System.out.println("%-"+columns.get(i).getLength()+"s");
+//                    System.out.println("88:"+columns.get(j).getName()+" 长度："+columns.get(j).getLength());
+//                    System.out.printf("%0-"+columns.get(j).getLength()+"s\t",columns.get(j).getColValue().get(i));
 
                 }
                 System.out.println();

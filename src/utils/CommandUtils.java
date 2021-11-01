@@ -24,21 +24,22 @@ public class CommandUtils {
     private final String space_1 = "\\s+";//一个或多个空格
     private final String space_0 = "\\s*";//零个或多个空格
     private final String type = "(string|int|float)";//属性
+    private final String typeSize = "("+space_0+"\\("+space_0+"\\d+"+space_0+"\\))*";//属性大小
     private final String bind = "\\s+(primary key|not null)?";//约束条件
     private final String bind_1 = "(primary key|not null)";
     private final String keyValue = "(\"\\s*\\S+\\s*\"|\\d+(\\.\\d+)*)";//属性值为字符串或者整数
     private final String whereOp = "(>=|<=|!=|=|>|<)";//where查询条件
     private final Pattern create_table = Pattern.compile("create"+space_1+"table"+space_1+keyWord+space_0
-            + "\\(("+space_0+keyWord+space_1+type+"("+bind+")*"+space_0+",)*"
-            +space_0+keyWord+space_1+type+"("+bind+")*"+space_0+"\\)"+space_0);
+            + "\\(("+space_0+keyWord+space_1+type+typeSize+"("+bind+")*"+space_0+",)*"
+            +space_0+keyWord+space_1+type+typeSize+"("+bind+")*"+space_0+"\\)"+space_0);
     private final Pattern desc_table = Pattern.compile("desc"+space_1+keyWord+space_0);
     private final Pattern drop_table = Pattern.compile("drop"+space_1+"table"+space_1+keyWord+space_0);
     private final Pattern insert_line = Pattern.compile("insert"+space_1+"into"+space_1+keyWord+space_1
             +"values"+space_0+"\\("+"("+space_0+keyValue+space_0+","+")*"+space_0+keyValue+"\\)");
     private final Pattern selectAll = Pattern.compile("select"+space_1+"\\*"+space_1+"from"+space_1+keyWord);
     private final Pattern alter_table_add = Pattern.compile("alter"+space_1+"table"+space_1+keyWord
-            +space_1+"(add"+space_1+keyWord+space_1+type+"("+bind+")*"+space_0+",)*"+space_0
-            +"(add"+space_1+keyWord+space_1+type+"("+bind+")*"+space_0+")");
+            +space_1+"(add"+space_1+keyWord+space_1+type+typeSize+"("+bind+")*"+space_0+",)*"+space_0
+            +"(add"+space_1+keyWord+space_1+type+typeSize+"("+bind+")*"+space_0+")");
     private final Pattern alter_table_drop = Pattern.compile("alter"+space_1+"table"+space_1+keyWord
             +space_1+"(drop"+space_1+keyWord+space_0+",)*"+space_0
             +"(drop"+space_1+keyWord+space_0+")");
@@ -106,15 +107,16 @@ public class CommandUtils {
     }
     //创建表
     public void create(String command){
-        String[] split = command.split("\\(|\\)");
-        String[] create_table = split[0].split("\\s+");
+        String substring = command.substring(command.indexOf("(")+1, command.lastIndexOf(")")).trim();
+        String substring1 = command.substring(0, command.indexOf("(")).trim();
+        String[] create_table = substring1.split("\\s+");
         if (isExitsTable(create_table[2])){
             System.out.println("创建失败，该表已经存在");
             return;
         }
         Table table = new Table();
         table.setTable_name(create_table[2]);
-        String[] attribute = split[1].split(",");
+        String[] attribute = substring.split(",");
         table.setAttribute_count(attribute.length);
         int primary_index = -1;
         for (int i=0;i<attribute.length;i++){
@@ -126,7 +128,16 @@ public class CommandUtils {
                 System.out.println("出错了，属性重复");
                 return;
             }
-            Column column = new Column(attr_info[0],attr_info[1],i);
+            String attrName = attr_info[0].trim();//属性名
+            String attrTypeInfo = attr_info[1].trim();//属性类型
+            String[] split = attrTypeInfo.split("\\(|\\)");
+            String attrType = split[0].trim();
+            int attrTypeSize = split.length==2?Integer.parseInt(split[1].trim()):-1;
+            if (attrTypeSize>100){
+                System.out.println(attrName+"属性值太大了，请重新分配");
+                return;
+            }
+            Column column = new Column(attrName,attrType,i,attrTypeSize);
             if (split1.length>1){
                 column.setBind(split1[1]);
             }
@@ -134,7 +145,7 @@ public class CommandUtils {
                 if (primary_index==-1){
                     primary_index=i;
                     table.setPrimary_index(primary_index);
-                    table.setPrimaryKey(attr_info[0]);
+                    table.setPrimaryKey(attrName);
                 }else {
                     System.out.println("出错了，主键不唯一");
                     return;
@@ -198,6 +209,11 @@ public class CommandUtils {
                     }
                 }
                 String[] split = insert_values[i].split("\"");
+                String value = split[1];
+                if (value.length()>column.getLength()){
+                    System.out.println("插入失败,"+value+"超出数据大小范围");
+                    return;
+                }
                 column.getColValue().add(split[1]);
             }else if ("int".equals(column.getType())){
                 if ("not null".equals(column.getBind())){
@@ -225,7 +241,8 @@ public class CommandUtils {
                         return;
                     }
                 }
-                column.getColValue().add(Integer.valueOf(insert_values[i]));
+                int value = Integer.valueOf(insert_values[i]);
+                column.getColValue().add(value);
             }else if ("float".equals(column.getType())){
                 if ("not null".equals(column.getBind())){
                     Pattern pattern = Pattern.compile("\\d+(\\.\\d+)*");
@@ -252,7 +269,8 @@ public class CommandUtils {
                         return;
                     }
                 }
-                column.getColValue().add(Float.valueOf(insert_values[i]));
+                float value = Float.valueOf(insert_values[i]);
+                column.getColValue().add(value);
             }else {
 
             }
@@ -287,7 +305,7 @@ public class CommandUtils {
         //ALTER TABLE dependent ADD employer string not null, ADD occupation string not null
         String[] split = command.split(",");//[ALTER TABLE dependent ADD employer string not null][ADD occupation string not null]
         String[] split1 = split[0].split("((?="+bind_1+")|(?<="+bind_1+"))");//[ALTER TABLE dependent ADD employer string ][not null]
-        String[] split2 = split1[0].split("\\s+");//[ALTER] [TABLE] [dependent] [ADD] [employer] [string]
+        String[] split2 = split1[0].split("\\s+");//[ALTER] [TABLE] [dependent] [ADD] [employer] [string(20)]
         List<String > attrAdd = new ArrayList<>();
         if (!isExitsTable(split2[2])){
             System.out.println("属性添加失败："+split2[2]+"不存在");
@@ -298,11 +316,16 @@ public class CommandUtils {
         List<Column> columnList = new ArrayList<>();
         String primaryKey = table.getPrimaryKey();
         int primaryKeyIndex = table.getPrimary_index();
-        if (table.getAttribute().contains(split2[4])){
-            System.out.println("属性添加失败："+split2[4]+"属性已存在");
+        String attrName = split2[4].trim();//属性名
+        if (table.getAttribute().contains(attrName)){
+            System.out.println("属性添加失败："+attrName+"属性已存在");
             return;
         }
-        Column column = new Column(split2[4],split2[5],table.getAttribute_count());
+        String attrTypeInfo = split2[5].trim();//属性类型
+        String[] split_1 = attrTypeInfo.split("\\(|\\)");
+        String attrType = split_1[0].trim();
+        int attrTypeSize = split_1.length==2?Integer.parseInt(split_1[1].trim()):-1;
+        Column column = new Column(attrName,attrType,table.getAttribute_count(),attrTypeSize);
         if (split1.length>1){
             if ("primary key".equals(split1[1]) && table.getPrimaryKey()!=null){
                 System.out.println("属性添加失败：存在多个主键");
@@ -314,18 +337,23 @@ public class CommandUtils {
             column.setBind(split1[1]);
         }
         attrAdd.add(split2[4]);
-        column.addColValue(table.getColumns().get(0).getColValue().size(),"null");
+        column.addColValue(table.getColumns().get(0).getColValue().size(),"-");
         columnList.add(column);
 
         for (int i=1;i<split.length;i++){
             String[] split3 = split[i].split("((?=" + bind_1 + ")|(?<=" + bind_1 + "))");//[ADD occupation string] [not null]
             split3[0] = split3[0].trim();
-            String[] split4 = split3[0].split("\\s+");//[ADD] [occupation] [string]
-            if (table.getAttribute().contains(split4[1])||attrAdd.contains(split4[1])){
-                System.out.println("属性添加失败："+split4[1]+"属性已存在");
+            String[] split4 = split3[0].split("\\s+");//[ADD] [occupation] [string(12)]
+            attrName = split4[1].trim();
+            if (table.getAttribute().contains(attrName)||attrAdd.contains(attrName)){
+                System.out.println("属性添加失败："+attrName+"属性已存在");
                 return;
             }
-            Column column1 = new Column(split4[1],split4[2],table.getAttribute_count()+columnList.size());
+            attrTypeInfo = split4[2].trim();//属性类型
+            split_1 = attrTypeInfo.split("\\(|\\)");//[string][12]
+            attrType = split_1[0].trim();
+            attrTypeSize = split_1.length==2?Integer.parseInt(split_1[1].trim()):-1;
+            Column column1 = new Column(attrName,attrType,table.getAttribute_count()+columnList.size(),attrTypeSize);
             if (split3.length>1){
                 if ("primary key".equals(split3[1]) && primaryKey!=null){
                     System.out.println("属性添加失败：存在多个主键");
@@ -336,9 +364,9 @@ public class CommandUtils {
                 }
                 column1.setBind(split3[1]);
             }
-            column1.addColValue(table.getColumns().get(0).getColValue().size(),"null");
+            column1.addColValue(table.getColumns().get(0).getColValue().size(),"-");
             columnList.add(column1);
-            attrAdd.add(split4[1]);
+            attrAdd.add(attrName);
         }
         table.getColumns().addAll(columnList);
         table.getAttribute().addAll(attrAdd);
