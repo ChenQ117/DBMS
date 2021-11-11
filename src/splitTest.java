@@ -48,7 +48,13 @@ public class splitTest {
             +space_1+"where"+space_1+keyWord+space_0
             +"="+space_0+keyValue+"("+space_1+"and"+space_1+keyWord+space_0
             +"="+space_0+keyValue+")*");
-
+    private final Pattern select_projection = Pattern.compile("select"+space_1+"("+keyWord+"\\.)?"+keyWord+"("+space_0+","+space_0
+            +"("+keyWord+"\\.)?"+keyWord+")*"+space_1
+            +"from"+space_1+keyWord+"("+space_1+keyWord+")?");//单表无条件属性投影
+    private final Pattern select_where = Pattern.compile("select"+space_1+"\\*"+space_1
+            +"from"+space_1+keyWord+"("+space_1+keyWord+")?"+space_1
+            +"where"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+keyValue
+            +"("+space_1+"and"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+keyValue+")*");
     @Test
     public void test(){
         String s = "CREATE TABLE employee(\n" +
@@ -62,10 +68,12 @@ public class splitTest {
     }
     @Test
     public void test_2(){
-        String s1 = "string(10)";
+        //select * from employee  where sex="男" and salary >3000
+        String s1 = "select * from employee e where e.sex=\"男\" and salary >3000;";
         s1 =s1.toLowerCase();
-        Pattern s2 =  Pattern.compile(type+typeSize);
-        System.out.println(s1+" "+s2.matcher(s1).matches());
+        Pattern s2 =  Pattern.compile("("+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+","+space_0+")*"
+                + space_1+"(("+keyWord+"\\.)?"+keyWord+")");
+        System.out.println(s1+" "+select_where.matcher(s1).matches());
         /*String[] split = s1.split(whereOp);
         for (int i=0;i<split.length;i++){
             System.out.println(i+": "+split[i]);
@@ -154,5 +162,12 @@ public class splitTest {
         for (int i=0;i<split.length;i++){
             System.out.println(i+split[i]);
         }
+    }
+    @Test
+    public void test_8(){
+        String s = "select e.ssn,e.name,pno,essn";
+        String[] split = s.split("select");
+        String ss = s.substring(s.indexOf("select")+7).trim();
+        System.out.println(ss);
     }
 }

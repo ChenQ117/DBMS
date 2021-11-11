@@ -5,8 +5,7 @@ import dataStructment.Column;
 import dataStructment.Table;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -27,7 +26,7 @@ public class CommandUtils {
     private final String typeSize = "("+space_0+"\\("+space_0+"\\d+"+space_0+"\\))*";//属性大小
     private final String bind = "\\s+(primary key|not null)?";//约束条件
     private final String bind_1 = "(primary key|not null)";
-    private final String keyValue = "(\"\\s*\\S+\\s*\"|\\d+(\\.\\d+)*)";//属性值为字符串或者整数
+    private final String keyValue = "(\"\\s*\\S+\\s*\"|\\d+(\\.\\d+)*)";//属性值为字符串或者数值
     private final String whereOp = "(>=|<=|!=|=|>|<)";//where查询条件
     private final Pattern create_table = Pattern.compile("create"+space_1+"table"+space_1+keyWord+space_0
             + "\\(("+space_0+keyWord+space_1+type+typeSize+"("+bind+")*"+space_0+",)*"
@@ -54,6 +53,47 @@ public class CommandUtils {
             +space_1+"where"+space_1+keyWord+space_0
             +whereOp+space_0+keyValue+"("+space_1+"and"+space_1+keyWord+space_0
             +whereOp+space_0+keyValue+")*");
+    //单表属性投影
+    private final Pattern select_projection = Pattern.compile("select"+space_1+"("+keyWord+"\\.)?"+keyWord+"("+space_0+","+space_0
+            +"("+keyWord+"\\.)?"+keyWord+")*"+space_1
+            +"from"+space_1+keyWord+"("+space_1+keyWord+")?");
+    //单表属性选择
+    private final Pattern select_where = Pattern.compile("select"+space_1+"\\*"+space_1
+            +"from"+space_1+keyWord+"("+space_1+keyWord+")?"+space_1
+            +"where"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+keyValue
+            +"("+space_1+"and"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+keyValue+")*");
+    //单表属性选择投影
+    private final Pattern select_p_where = Pattern.compile("select"+space_1+"("+keyWord+"\\.)?"+keyWord
+            +"("+space_0+","+space_0+"("+keyWord+"\\.)?"+keyWord+")*"+space_1
+            +"from"+space_1+keyWord+"("+space_1+keyWord+")?"+space_1
+            +"where"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+keyValue
+            +"("+space_1+"and"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+keyValue+")*");
+    //两个关系和多个关系的连接操作
+    private final Pattern select_link = Pattern.compile("select"+space_1+"\\*"+space_1
+            +"from"+space_1+keyWord+"("+space_1+keyWord+")?"+"("+space_0+","+space_0+keyWord+"("+space_1+keyWord+")?)+"+space_1
+            +"where"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"("+keyWord+"\\.)?"+keyWord
+            +"("+space_1+"and"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"("+keyWord+"\\.)?"+keyWord+")*"
+    );
+    //两个关系和多个关系的选择和连接操作
+    private final Pattern select_link_w = Pattern.compile("select"+space_1+"\\*"+space_1
+            +"from"+space_1+keyWord+"("+space_1+keyWord+")?"+"("+space_0+","+space_0+keyWord+"("+space_1+keyWord+")?)+"+space_1
+            +"where"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"(("+keyWord+"\\.)?"+keyWord+")|"+keyValue
+            +"("+space_1+"and"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"(("+keyWord+"\\.)?"+keyWord+")|"+keyValue
+    );
+    //两个关系和多个关系的投影和连接操作
+    private final Pattern select_link_p = Pattern.compile("select"+space_1+"("+keyWord+"\\.)?"+keyWord
+            +"("+space_0+","+space_0+"("+keyWord+"\\.)?"+keyWord+")*"+space_1
+            +"from"+space_1+keyWord+"("+space_1+keyWord+")?"+"("+space_0+","+space_0+keyWord+"("+space_1+keyWord+")?)+"+space_1
+            +"where"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"("+keyWord+"\\.)?"+keyWord
+            +"("+space_1+"and"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"("+keyWord+"\\.)?"+keyWord+")*"
+    );
+    //多个关系的选择、投影和连接操作
+    private final Pattern select_link_p_a_w = Pattern.compile("select"+space_1+"("+keyWord+"\\.)?"+keyWord
+            +"("+space_0+","+space_0+"("+keyWord+"\\.)?"+keyWord+")*"+space_1
+            +"from"+space_1+keyWord+"("+space_1+keyWord+")?"+"("+space_0+","+space_0+keyWord+"("+space_1+keyWord+")?)+"+space_1
+            +"where"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"(("+keyWord+"\\.)?"+keyWord+")|"+keyValue
+            +"("+space_1+"and"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"(("+keyWord+"\\.)?"+keyWord+")|"+keyValue
+    );
     public void execute(String command){
         command = command.toLowerCase();
         if (create_table.matcher(command).matches()){
@@ -78,6 +118,12 @@ public class CommandUtils {
             updateAll(command);
         }else if (update_where.matcher(command).matches()){
             updateWhere(command);
+        }else if (select_projection.matcher(command).matches()){
+            selectProjection(command);
+        }else if (select_where.matcher(command).matches()) {
+            selectWhere(command);
+        }else if (select_p_where.matcher(command).matches()){
+            selectPAWhere(command);
         }
         else {
             System.out.println("语法错误");
@@ -460,7 +506,7 @@ public class CommandUtils {
         }
         Table table = ReadAndWrite.formTable(name);
         ReadAndWrite.exportTableValue(table);
-        List<Integer> index = findWhere(table,"删除表数据失败：",split[1].trim());
+        List<Integer> index = findWhere(table,"删除表数据失败：",split[1].trim(),null);
         if (index.size()!=0){
             for (int i=index.size()-1;i>=0;i--){
                 table.deleteLine(index.get(i));
@@ -472,7 +518,7 @@ public class CommandUtils {
         }
     }
     //找出符合where条件的行
-    public List<Integer> findWhere(Table table,String log,String split){
+    public List<Integer> findWhere(Table table,String log,String split,String reName){
         List<Integer> index = new ArrayList<>();//满足条件的行
         List<String> attribute = table.getAttribute();
         split = split.trim();
@@ -492,7 +538,11 @@ public class CommandUtils {
             }else {
                 split3 = split2[i].split("(?="+whereOp+")|(?<="+whereOp+")");//[NAME][=] ["王二"]
             }
-
+            if (reName!=null){
+                if (split3[0].startsWith(reName)){
+                    split3[0] = split3[0].substring(split3[0].indexOf(".")+1);
+                }
+            }
             key.add(split3[0].trim());
             split3[1] = split3[1].trim();
             op.add(split3[1]);
@@ -540,7 +590,6 @@ public class CommandUtils {
                             return index;
                         }
                     }
-
                 }
                 if (k == key.size()){
                     index.add(i);
@@ -776,7 +825,7 @@ public class CommandUtils {
         ReadAndWrite.exportTableValue(table);
         split[1]= split[1].trim();
         String[] split2 = split[1].split("where");//[name="王二",sex="女" ][ salary=3000 and dno = "d1"]
-        List<Integer> index = findWhere(table, "修改数据失败", split2[1].trim());
+        List<Integer> index = findWhere(table, "修改数据失败", split2[1].trim(),null);
         if (index.size()==0){
             return;
         }
@@ -785,6 +834,119 @@ public class CommandUtils {
             ReadAndWrite.writeTableTxt(table);
             System.out.println("修改数据成功，共"+index.size()+"行受到影响");
         }
+    }
+    //单关系投影操作
+    public void selectProjection(String command){
+        //select e.ssn,e.name,dno,ssn from employee e
+        Map<String, String> infoMap = projectionSplit(command);
+        String tableName = infoMap.get("tableName");
+        String reName = infoMap.get("reName");
+        String proAttrs = infoMap.get("proAttrs");
+        if (!isExitsTable(tableName)){
+            System.out.println("查找失败，"+tableName+"不存在");
+            return;
+        }
+        Table table = ReadAndWrite.formTable(tableName);
+        ReadAndWrite.exportTableValue(table);
+        List<Integer> attributeIdList = projection(proAttrs,reName,table.getAttribute());
+        if (attributeIdList != null){
+            table.showTableColumn(attributeIdList);
+        }
+    }
+    /**
+     * 分割投影查询语句
+     * @param command select e.ssn,e.name,pno,essn from employee e
+     * @return 获得表名，表重命名，属性
+     */
+    public Map<String,String> projectionSplit(String command){
+        //select e.ssn,e.name,pno,essn from employee e
+        String[] split = command.split("from");//[select e.ssn,e.name,pno,essn ][ employee e]
+        String tableInfo = split[1].trim();//[employee e]
+        String[] split1 = tableInfo.split("\\s+");//[employee][e]
+        String tableName = split1[0].trim();
+        String reName = split1.length==2?split1[1].trim():null;
+        String proAttrs = split[0].substring(split[0].indexOf("select")+7).trim();//[e.ssn,e.name,pno,essn];
+        Map<String,String> infoMap= new HashMap<>();
+        infoMap.put("tableName",tableName);
+        infoMap.put("reName",reName);
+        infoMap.put("proAttrs",proAttrs);
+        return infoMap;
+    }
+    /**
+     * 进行投影操作
+     * @param attribute 需要投影的属性
+     * @param reName 表的重命名
+     * @param attributeList 表的所有属性列表
+     * @return 返回需要投影的属性的列标
+     */
+    public List<Integer> projection(String attribute,String reName,List<String> attributeList){
+        String[] attributes = attribute.split(",");//[e.ssn][e.name][pno][essn]
+        List<Integer> attributeIdList = new ArrayList<>();
+        for (int i=0;i<attributes.length;i++){
+            attributes[i] = attributes[i].trim();
+            if (attributes[i].contains(".")){
+                if (attributes[i].startsWith(reName)){
+                    attributes[i] = attributes[i].substring(attributes[i].indexOf(".")+1);
+                }else {
+                    System.out.println("查找失败，请检查"+attributes[i]);
+                    return null;
+                }
+            }
+            int attributeId = attributeList.indexOf(attributes[i]);
+            if (attributeId == -1){
+                System.out.println("查找失败，"+attributes[i]+"属性不存在");
+                return null;
+            }
+            attributeIdList.add(attributeId);
+        }
+        return attributeIdList;
+    }
+    //单关系选择操作
+    public void selectWhere(String command){
+        //select * from employee e where e.sex="男" and salary >3000
+        String[] split = command.split("where");//[select * from employee][ sex="男" and salary >3000]
+        String[] split1 = split[0].trim().split("\\s+");//[select][ *][ from ][employee][e]
+        String tableName = split1[3].trim();
+        if (!isExitsTable(tableName)){
+            System.out.println("查找失败，"+tableName+"表不存在");
+            return;
+        }
+        String reName = split1.length==5?split1[4].trim():null;
+        Table table = ReadAndWrite.formTable(tableName);
+        ReadAndWrite.exportTableValue(table);
+        //找出满足条件的行
+        List<Integer> list = findWhere(table, "查找失败", split[1].trim(),reName);
+        table.showTableLine(list);
+    }
+    //单关系选择投影操作
+    public void selectPAWhere(String command){
+        //select e.ssn,e.name,dno,ssn from employee e where e.sex="男" and salary >3000
+        String[] split = command.split("where");//[select e.ssn,e.name,dno,essn from employee e ][ e.sex="男" and salary >3000]
+        Map<String, String> infoMap = projectionSplit(split[0].trim());
+        String tableName = infoMap.get("tableName");
+        String reName = infoMap.get("reName");
+        String proAttrs = infoMap.get("proAttrs");
+        if (!isExitsTable(tableName)){
+            System.out.println("查找失败，"+tableName+"不存在");
+            return;
+        }
+        Table table = ReadAndWrite.formTable(tableName);
+        ReadAndWrite.exportTableValue(table);
+        //先找出满足条件的行
+        List<Integer> lineList = findWhere(table, "查找失败", split[1].trim(),reName);
+        if (lineList.size()==0){
+            System.out.println("查找失败，符合要求的行为0");
+            return;
+        }
+        //找出需要投影的列标
+        List<Integer> attributeIdList = projection(proAttrs,reName,table.getAttribute());
+        if (attributeIdList != null && lineList.size()>0){
+            table.showLineAndColumn(lineList,attributeIdList);
+        }
+    }
+    //两个关系和多个关系的连接操作
+    public void selectLink(String command){
+
     }
     public boolean isExitsTable (String tableName){
         tableName = tableName.trim();

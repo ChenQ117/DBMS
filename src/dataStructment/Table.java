@@ -103,4 +103,100 @@ public class Table {
             columns.get(i).setIndex(i);
         }
     }
+
+    /**
+     * 根据list的参数显示对应列的数据  对输出结果去重
+     * @param list 存的是需要显示的列的列标
+     */
+    public void showTableColumn(List<Integer> list){
+        List<String> showList = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        int columnLine = columns.get(0).getColValue().size();
+        for (int j=0;j<list.size();j++){
+            sb.append(attribute.get(list.get(j))+"\t\t");
+        }
+        String s = sb.toString();
+        if (!showList.contains(s)){
+            showList.add(s);
+        }
+        for (int i=0;i<(columnLine>0?columnLine:0);i++){
+            sb = new StringBuilder();
+            for (int j=0;j<list.size();j++){
+                sb.append(String.format("%-"+columns.get(list.get(j)).getLength()+"s ",columns.get(list.get(j)).getColValue().get(i)));
+            }
+            s = sb.toString();
+            if (!showList.contains(s)){
+                showList.add(s);
+            }
+        }
+        for (int i=0;i<showList.size();i++){
+            System.out.println(showList.get(i));
+        }
+    }
+
+    /**
+     * 根据list参数显示对应行的所有信息,对输出结果去重
+     * @param list 存的是需要输出的行的行标
+     */
+    public void showTableLine(List<Integer> list){
+        List<String> showList = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        for (String attr:attribute){
+            sb.append(attr+"\t\t");
+        }
+        String s = sb.toString();
+        if (!showList.contains(s)){
+            showList.add(s);
+        }
+        if (list!=null && list.size()>0){
+            for (int j=0;j<list.size();j++){
+                sb = new StringBuilder();
+                for (int i=0;i<attribute_count;i++){
+                    sb.append(String.format("%-"+columns.get(i).getLength()+"s ",columns.get(i).getColValue().get(list.get(j))));
+                }
+                s = sb.toString();
+                if (!showList.contains(s)){
+                    showList.add(s);
+                }
+            }
+            for (int i=0;i<showList.size();i++){
+                System.out.println(showList.get(i));
+            }
+        }
+
+    }
+
+    /**
+     * 根据行标和列标输出对应的行和列 默认去重输出
+     * @param lineList 需要输出的行标
+     * @param columnList 需要输出的列标
+     */
+    public void showLineAndColumn(List<Integer> lineList,List<Integer> columnList){
+        List<String> showList = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        int columnLine = columns.get(0).getColValue().size();
+        for (int j=0;j<columnList.size();j++){
+            sb.append(attribute.get(columnList.get(j))+"\t\t");
+        }
+        String s = sb.toString();
+        if (!showList.contains(s)){
+            showList.add(s);
+        }
+        if (lineList!=null && lineList.size()>0){
+            for (int i=0;i<lineList.size();i++){
+                sb = new StringBuilder();
+                for (int j=0;j<columnList.size();j++){
+                    sb.append(String.format("%-"+columns.get(columnList.get(j)).getLength()+"s ",
+                            columns.get(columnList.get(j)).getColValue().get(lineList.get(i))));
+                }
+                s = sb.toString();
+                if (!showList.contains(s)){
+                    showList.add(s);
+                }
+            }
+        }
+        for (int i=0;i<showList.size();i++){
+            System.out.println(showList.get(i));
+        }
+    }
 }

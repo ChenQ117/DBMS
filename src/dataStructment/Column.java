@@ -121,6 +121,5 @@ public class Column {
         for (Object o:colValue){
             System.out.println(o);
         }
-
     }
 }
