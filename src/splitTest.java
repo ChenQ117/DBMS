@@ -1,5 +1,9 @@
 import dataStructment.Column;
+import dataStructment.Table;
+import javafx.scene.control.Tab;
 import org.junit.Test;
+import utils.ReadAndWrite;
+import utils.TableUtils;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -55,6 +59,33 @@ public class splitTest {
             +"from"+space_1+keyWord+"("+space_1+keyWord+")?"+space_1
             +"where"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+keyValue
             +"("+space_1+"and"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+keyValue+")*");
+
+    //两个关系和多个关系的连接操作
+    private final Pattern select_link = Pattern.compile("select"+space_1+"\\*"+space_1
+            +"from"+space_1+keyWord+"("+space_1+keyWord+")?"+"("+space_0+","+space_0+keyWord+"("+space_1+keyWord+")?)+"+space_1
+            +"where"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"("+keyWord+"\\.)?"+keyWord
+            +"("+space_1+"and"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"("+keyWord+"\\.)?"+keyWord+")*"
+    );
+    //两个关系和多个关系的选择和连接操作
+    private final Pattern select_link_w = Pattern.compile("select"+space_1+"\\*"+space_1
+            +"from"+space_1+keyWord+"("+space_1+keyWord+")?"+"("+space_0+","+space_0+keyWord+"("+space_1+keyWord+")?)+"+space_1
+            +"where"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"((("+keyWord+"\\.)?"+keyWord+")|"+keyValue+")"
+            +"("+space_1+"and"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"((("+keyWord+"\\.)?"+keyWord+")|"+keyValue+"))*"
+    );
+    //两个关系和多个关系的投影和连接操作
+    private final Pattern select_link_p = Pattern.compile("select"+space_1+"("+keyWord+"\\.)?"+keyWord
+            +"("+space_0+","+space_0+"("+keyWord+"\\.)?"+keyWord+")*"+space_1
+            +"from"+space_1+keyWord+"("+space_1+keyWord+")?"+"("+space_0+","+space_0+keyWord+"("+space_1+keyWord+")?)+"+space_1
+            +"where"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"("+keyWord+"\\.)?"+keyWord
+            +"("+space_1+"and"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"("+keyWord+"\\.)?"+keyWord+")*"
+    );
+    //多个关系的选择、投影和连接操作
+    private final Pattern select_link_p_a_w = Pattern.compile("select"+space_1+"("+keyWord+"\\.)?"+keyWord
+            +"("+space_0+","+space_0+"("+keyWord+"\\.)?"+keyWord+")*"+space_1
+            +"from"+space_1+keyWord+"("+space_1+keyWord+")?"+"("+space_0+","+space_0+keyWord+"("+space_1+keyWord+")?)+"+space_1
+            +"where"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"((("+keyWord+"\\.)?"+keyWord+")|"+keyValue+")"
+            +"("+space_1+"and"+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+whereOp+space_0+"((("+keyWord+"\\.)?"+keyWord+")|"+keyValue+"))*"
+    );
     @Test
     public void test(){
         String s = "CREATE TABLE employee(\n" +
@@ -68,12 +99,12 @@ public class splitTest {
     }
     @Test
     public void test_2(){
-        //select * from employee  where sex="男" and salary >3000
-        String s1 = "select * from employee e where e.sex=\"男\" and salary >3000;";
+        //select * from employee ,works_on where essn = ssn
+        String s1 = "select * from employee e1,employee e2 where e1.ssn = e2.ssn";
         s1 =s1.toLowerCase();
         Pattern s2 =  Pattern.compile("("+space_1+"("+keyWord+"\\.)?"+keyWord+space_0+","+space_0+")*"
                 + space_1+"(("+keyWord+"\\.)?"+keyWord+")");
-        System.out.println(s1+" "+select_where.matcher(s1).matches());
+        System.out.println(s1+" "+select_link.matcher(s1).matches());
         /*String[] split = s1.split(whereOp);
         for (int i=0;i<split.length;i++){
             System.out.println(i+": "+split[i]);
@@ -165,9 +196,66 @@ public class splitTest {
     }
     @Test
     public void test_8(){
-        String s = "select e.ssn,e.name,pno,essn";
-        String[] split = s.split("select");
-        String ss = s.substring(s.indexOf("select")+7).trim();
-        System.out.println(ss);
+        /*List<String > list = new LinkedList<>();
+        list.add(1,"aa");
+        list.add(3,"uu");
+        list.add(5,"kk");
+        System.out.println(list.size());*/
+        // 创建一个数组
+        ArrayList<String> sites = new ArrayList<>();
+
+        // 在该数组末尾插入元素
+        /*sites.add("Google");
+        sites.add("Runoob");
+        sites.add("Taobao");*/
+        System.out.println("ArrayList: " + sites);
+
+        // 在第一个位置插入元素
+        sites.add(0, null);
+        sites.add(1,"weibo");
+        System.out.println("更新 ArrayList: " + sites);
+    }
+    @Test
+    public void test_9(){
+        List<Table> tableList = new ArrayList<>();
+        Table table = ReadAndWrite.formTable("employee");
+        ReadAndWrite.exportTableValue(table);
+        tableList.add(table);
+        Table table1 = tableList.get(0);
+        table1.showTable();
+        List<Integer> line = new ArrayList<>();
+        line.add(1);
+        line.add(3);
+        table1.remainListAll(line);
+        table1.showTable();
+        System.out.println("------------------------------------");
+        tableList.get(0).showTable();
+//        System.out.println(table1 == tableList.get(0));
+    }
+    @Test
+    public void test_10(){
+        List list = new ArrayList();
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        for (int i=0;i<list.size();i++){
+            list.remove(i);
+            list.remove(i+1);
+        }
+        System.out.println(list.size());
+    }
+    @Test
+    public void test_11(){
+        Table t1 = ReadAndWrite.formTable("employee");
+        ReadAndWrite.exportTableValue(t1);
+        Table t2 = ReadAndWrite.formTable("works_on");
+        ReadAndWrite.exportTableValue(t2);
+        TableUtils tableUtils = TableUtils.getTableUtils();
+        Table table = tableUtils.infoNewTable(t1, t2);
+        List<Integer> list = new ArrayList<>();
+        list.add(0);
+        list.add(1);
+        table.combine(t1,t2,2,list);
+        table.showTable();
     }
 }

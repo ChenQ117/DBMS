@@ -1,6 +1,7 @@
 package dataStructment;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -90,18 +91,57 @@ public class Table {
                 }
                 System.out.println();
             }
+            System.out.println("共显示"+columns.get(0).getColValue().size()+"条记录");
         }
     }
-    //删除一行的数据
+    //删除一行的数据  调用删除函数时一定要排序，且一定要从大往小删！！！！！
     public void deleteLine(int index){
         for (int i=0;i<attribute_count;i++){
             columns.get(i).getColValue().remove(index);
+        }
+    }
+    //只保留行号列表中有的行 调用删除函数时一定要排序，且一定要从大往小删！！！！
+    public void remainListAll(List<Integer> lineList){
+        Collections.sort(lineList);
+        for (int i=columns.get(0).getColValue().size()-1;i>=0;i--){
+            if (!lineList.contains(i)) {
+                deleteLine(i);
+            }
         }
     }
     public void updateColumns(){
         for (int i=0;i<columns.size();i++){
             columns.get(i).setIndex(i);
         }
+    }
+    public void updateAttrName(){
+        attribute.clear();
+        for (int i=0;i<attribute_count;i++){
+            attribute.add(table_name+"."+columns.get(i).getName());
+            columns.get(i).setName(attribute.get(i));
+        }
+    }
+
+    /**
+     * t1的第line行与t2的lineList里的行进行连接，生成的行插入到调用该方法的表t3中
+     * @param t1 表1
+     * @param t2 表2
+     * @param line t1中需要连接的行号
+     * @param lineList t2中需要连接的行号的集合
+     */
+    public void combine(Table t1,Table t2,int line,List<Integer> lineList){
+        int j=0;
+        for (;j<t1.attribute_count;j++){
+            for (int i=0;i<lineList.size();i++){
+                columns.get(j).getColValue().add(t1.getColumns().get(j).getColValue().get(lineList.get(i)));
+            }
+        }
+        for (;j<attribute_count;j++){
+            for (int i=0;i<lineList.size();i++){
+                columns.get(j).getColValue().add(t2.getColumns().get(j-t1.attribute_count).getColValue().get(line));
+            }
+        }
+
     }
 
     /**
@@ -132,6 +172,7 @@ public class Table {
         for (int i=0;i<showList.size();i++){
             System.out.println(showList.get(i));
         }
+        System.out.println("共显示"+showList.size()+"条记录");
     }
 
     /**
@@ -163,7 +204,7 @@ public class Table {
                 System.out.println(showList.get(i));
             }
         }
-
+        System.out.println("共显示"+showList.size()+"条记录");
     }
 
     /**
@@ -198,5 +239,6 @@ public class Table {
         for (int i=0;i<showList.size();i++){
             System.out.println(showList.get(i));
         }
+        System.out.println("共显示"+showList.size()+"条记录");
     }
 }

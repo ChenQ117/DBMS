@@ -33,6 +33,15 @@ public class Column {
         this.length = length>0?length:10;//默认大小为10
         bind = null;
     }
+    //浅拷贝
+    public void copy(Column column,int k){
+        name = column.name;
+        type = column.type;
+        length = column.length;
+        bind = column.bind;
+        index = k;
+        colValue = new ArrayList();
+    }
     public int getLength() {
         return length;
     }
